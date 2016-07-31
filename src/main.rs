@@ -1,13 +1,7 @@
 extern crate remnant;
+extern crate copperline;
 
 use remnant::remnantdb;
-use std::io;
-use std::io::prelude::*;
-
-fn prompt(a: &remnant::remnantdb::Anchor) {
-    print!("{}$ ", a);
-    let _ = io::stdout().flush();
-}
 
 fn help() {
     println!("exit - quit");
@@ -15,33 +9,29 @@ fn help() {
     println!("list - list all entries in the database");
 }
 
+fn list(db: &remnantdb::RemnantDB) {
+    for entry in db.iter() {
+        println!("{}", entry);
+    }
+}
+
 fn main() {
     let mut r = remnantdb::RemnantDB::new();
-
     let root = r.create_str("console");
     let mut anchor = root;
 
-    let stdin = io::stdin();
-
-    prompt(&anchor);
-
-    for line in stdin.lock().lines() {
-        let u = line.unwrap();
-
-        match (&u).trim() {
+    let mut cl = copperline::Copperline::new();
+    while let Ok(line) = cl.read_line_default(format!("{} ", anchor).as_ref()) {
+        match line.trim() {
             "help" => help(),
             "exit" => break,
-            "list" => {
-                for e in r.iter() {
-                    println!("{}", e);
-                }
-            },
-            "" => {},
+            "list" => list(&r),
+            "" => (),
             s => {
                 anchor = r.append_str(&anchor, s);
                 println!("! {}", r.len());
-            },
+            }
         }
-        prompt(&anchor);
+        cl.add_history(line);
     }
 }
